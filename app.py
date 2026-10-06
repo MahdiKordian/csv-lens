@@ -29,25 +29,59 @@ def descriptive_statistics(df):
     st.dataframe(stats, use_container_width=True)
 
 
-def is_numeric(df,columns):
-    column_type = df[columns].dtype
-    if pd.api.types.is_numeric_dtype(column_type):
-        return True
-    return False
+def is_numeric(df, column):
+    return pd.api.types.is_numeric_dtype(df[column])
 
 
-def custom_chart(df,chart_type,x_axis,y_axis,hue):
-    fig,ax=plt.subplots(figsize=(10, 5))
-    if hue=="None":
-        hue=None
+def custom_chart(df, chart_type, x_axis, y_axis, hue):
+    fig, ax = plt.subplots(figsize=(10, 5))
+
+    if hue == "None":
+        hue = None
+
+    plot_kwargs = {}
+
+    if hue is not None:
+        plot_kwargs = {
+            "hue": hue,
+            "palette": "mako"
+        }
+
     if chart_type == "Scatter":
-        sns.scatterplot(data=df,x=x_axis,y=y_axis,ax=ax,palette='mako',hue=hue)
+        sns.scatterplot(
+            data=df,
+            x=x_axis,
+            y=y_axis,
+            ax=ax,
+            **plot_kwargs
+        )
+
     elif chart_type == "Line":
-        sns.lineplot(data=df,x=x_axis,y=y_axis,ax=ax,palette='mako',hue=hue)
+        sns.lineplot(
+            data=df,
+            x=x_axis,
+            y=y_axis,
+            ax=ax,
+            **plot_kwargs
+        )
+
     elif chart_type == "Bar":
-        sns.barplot(data=df,x=x_axis,y=y_axis,ax=ax,palette='mako',hue=hue)
+        sns.barplot(
+            data=df,
+            x=x_axis,
+            y=y_axis,
+            ax=ax,
+            **plot_kwargs
+        )
+
     elif chart_type == "Hist":
-        sns.histplot(data=df,x=x_axis,ax=ax,palette='mako',hue=hue)
+        sns.histplot(
+            data=df,
+            x=x_axis,
+            ax=ax,
+            **plot_kwargs
+        )
+
     st.pyplot(fig)
 
 def data_analysis(df):
@@ -73,7 +107,7 @@ def data_analysis(df):
             st.pyplot(fig)
 
     with tab3:
-        categorical_df = df.select_dtypes(exclude="number")
+        categorical_df = df.select_dtypes(include=["object", "category"])
         if categorical_df.shape[1] == 0:
             st.info("⚠️ No categorical columns found.")
         else:
@@ -87,7 +121,7 @@ def data_analysis(df):
     with tab4:
         st.subheader("Create a custom chart")
         col1,col2,col3,col4=st.columns(4)
-        chart_type=col1.selectbox("Chart type",["Scatter","Line","Bar"])
+        chart_type=col1.selectbox("Chart type",["Scatter","Line","Bar","Hist"])
         x_axis=col2.selectbox("X-axis",df.columns)
         y_axis=col3.selectbox("Y-axis",df.columns)
         hue=col4.selectbox("hue",["None"] + list(df.columns))
@@ -180,3 +214,5 @@ if __name__=="__main__":
         descriptive_statistics(df)
         data_analysis(df)
         filter_and_download(df)
+
+        
