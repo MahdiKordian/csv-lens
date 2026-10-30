@@ -155,13 +155,31 @@ def filter_and_download(df):
             filtered_df = df
     else:
         unique_vals = df[filter_column].dropna().unique().tolist()
+
         selected_vals = col2.multiselect(
             "Select values:",
             unique_vals,
             default=unique_vals,
             key="filter_values"
         )
-        filtered_df = df[df[filter_column].isin(selected_vals)]
+
+        has_missing = df[filter_column].isna().any()
+        include_missing = False
+
+        if has_missing:
+            include_missing = col2.checkbox(
+                "Include rows with missing values",
+                value=False,
+                key="include_missing_values"
+            )
+
+        mask = df[filter_column].isin(selected_vals)
+
+        if include_missing:
+            mask = mask | df[filter_column].isna()
+
+        filtered_df = df[mask]
+
 
     st.caption(f"Filtered rows: {filtered_df.shape[0]} / {df.shape[0]}")
     st.dataframe(filtered_df, use_container_width=True)
