@@ -60,6 +60,7 @@ Explore your data through several visualization options:
 
 - Filter numerical data using range sliders.
 - Filter categorical data using multiselect controls.
+- Optionally include rows with missing values when filtering numeric or categorical columns.
 - View updated results based on the selected filters.
 
 ### 💾 Export Filtered Data
