@@ -11,7 +11,7 @@ def dataset_overview(df):
     col1.metric("Rows",str(df.shape[0]))
     col2.metric("Columns",str(df.shape[1]))
     col3.metric("Missing Values",str(df.isna().sum().sum()))
-    st.dataframe(df, use_container_width=True) 
+    st.dataframe(df, use_container_width=True)
     with st.expander("Column Information",expanded=False):
         info_df=pd.DataFrame({
             "Data type": df.dtypes,
@@ -128,60 +128,78 @@ def data_analysis(df):
         custom_chart(df,chart_type,x_axis,y_axis,hue)
 
 
+
+
 def filter_and_download(df):
     st.divider()
     st.subheader("Filter and Download")
 
     col1, col2 = st.columns(2)
-    filter_column = col1.selectbox("Select a column to filter:", df.columns, key="filter_column")
+    filter_column = col1.selectbox(
+        "Select a column to filter:",
+        df.columns,
+        key="filter_column"
+    )
+
+    column_data = df[filter_column]
 
     if is_numeric(df, filter_column):
-        min_val = float(df[filter_column].min())
-        max_val = float(df[filter_column].max())
-        if min_val < max_val:
-            selected_range = col2.slider(
-                "Select range:",
-                min_value=min_val,
-                max_value=max_val,
-                value=(min_val, max_val),
-                key="filter_range"
-            )
-            filtered_df = df[
-                (df[filter_column] >= selected_range[0]) &
-                (df[filter_column] <= selected_range[1])
-            ]
+        numeric_values = column_data.dropna()
+
+        if numeric_values.empty:
+            st.info("No numeric values available to filter.")
+            mask = pd.Series(False, index=df.index, dtype=bool)
+
         else:
-            st.info("This column has only one value.")
-            filtered_df = df
+            min_val = float(numeric_values.min())
+            max_val = float(numeric_values.max())
+
+            if min_val < max_val:
+                selected_range = col2.slider(
+                    "Select range:",
+                    min_value=min_val,
+                    max_value=max_val,
+                    value=(min_val, max_val),
+                    key=f"filter_range_{filter_column}"
+                )
+
+                mask = column_data.between(
+                    selected_range[0],
+                    selected_range[1]
+                ).fillna(False)
+
+            else:
+                st.info("This column has only one unique value.")
+                mask = column_data.notna()
+
     else:
-        unique_vals = df[filter_column].dropna().unique().tolist()
+        unique_vals = column_data.dropna().unique().tolist()
 
         selected_vals = col2.multiselect(
             "Select values:",
             unique_vals,
             default=unique_vals,
-            key="filter_values"
+            key=f"filter_values_{filter_column}"
         )
 
-        has_missing = df[filter_column].isna().any()
-        include_missing = False
+        mask = column_data.isin(selected_vals)
 
-        if has_missing:
-            include_missing = col2.checkbox(
-                "Include rows with missing values",
-                value=False,
-                key="include_missing_values"
-            )
-
-        mask = df[filter_column].isin(selected_vals)
+    if column_data.isna().any():
+        include_missing = col2.checkbox(
+            "Include rows with missing values",
+            value=False,
+            key=f"include_missing_values_{filter_column}"
+        )
 
         if include_missing:
-            mask = mask | df[filter_column].isna()
+            mask = mask | column_data.isna()
 
-        filtered_df = df[mask]
+    filtered_df = df[mask]
 
+    st.caption(
+        f"Filtered rows: {filtered_df.shape[0]} / {df.shape[0]}"
+    )
 
-    st.caption(f"Filtered rows: {filtered_df.shape[0]} / {df.shape[0]}")
     st.dataframe(filtered_df, use_container_width=True)
 
     st.download_button(
@@ -191,6 +209,8 @@ def filter_and_download(df):
         mime="text/csv",
         use_container_width=True
     )
+
+
 
 
 if __name__=="__main__":
@@ -233,4 +253,3 @@ if __name__=="__main__":
         data_analysis(df)
         filter_and_download(df)
 
-        
